@@ -250,6 +250,22 @@ struct automaton *the_configuration_file_into_the_automaton(struct automaton *au
             {
               buffer_transition = 0xA;
             }
+            if (gstrcomp(aux, "3E"))
+            {
+              buffer_transition = 0x3E;
+            }
+             if (gstrcomp(aux, "3C"))
+            {
+              buffer_transition = 0x3C;
+            }
+             if (gstrcomp(aux, "7C"))
+            {
+              buffer_transition = 0x7C;
+            }
+              if (gstrcomp(aux, "2A"))
+            {
+              buffer_transition = 0x2A;
+            }
           }
           else
           {
