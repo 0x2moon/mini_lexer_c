@@ -8,19 +8,19 @@
 
 int main(int argc, char *argv[])
 {
-  // if (argc != 2)
-  // {
-  //   printf("Uso incorreto. Por favor, forneca o path do arquivo .c como argumento.\nExemplo:\n");
-  //   gcolored_print("\tfiles/utils_files/exemplo.c\n",GREEN);
-  //   printf("Use make run para executar o arquivo de exemplo\n");
-  //   return 1;
-  // }
+  if (argc != 2)
+  {
+    printf("Uso incorreto. Por favor, forneca o path do arquivo .c como argumento.\nExemplo:\n");
+    gcolored_print("\tfiles/utils_files/exemplo.c\n",GREEN);
+    printf("Use make run para executar o arquivo de exemplo\n");
+    return 1;
+  }
 
   struct all_automaton *automaton_rules_list = create_all();
   struct list_tokens *tokens_of_input_files = create_list_token();
   struct symbol_table_list *symbol_of_table = create_st_list();
-  // char *path_analyser_file = gstraloc(argv[1]);
-  char *path_analyser_file = gstraloc("files/utils_files/exemplo.c");
+  char *path_analyser_file = gstraloc(argv[1]);
+  
   char *filename[] =
       {
           "KEYWORD_AUTO",
