@@ -242,6 +242,11 @@ struct automaton *the_configuration_file_into_the_automaton(struct automaton *au
               buffer_transition = 0x20;
             }
 
+             if (gstrcomp(aux, "5F"))
+            {
+              buffer_transition = 0x5F;
+            }
+
             if (gstrcomp(aux, "2F"))
             {
               buffer_transition = '/';
@@ -265,6 +270,10 @@ struct automaton *the_configuration_file_into_the_automaton(struct automaton *au
               if (gstrcomp(aux, "2A"))
             {
               buffer_transition = 0x2A;
+            }
+             if (gstrcomp(aux, "26"))
+            {
+              buffer_transition = 0x26;
             }
           }
           else
@@ -360,8 +369,7 @@ struct automaton_node *insert_new_automaton_in_node_automaton(struct all_automat
 {
   char fullpath[80];
   sprintf(fullpath, "files/automaton_syntax_file/%s", path_name);
-  printf("%s\n", fullpath);
-
+  ensure_zeroA_end_file(fullpath);
   if (all->initial_automaton == NULL)
   {
     all->initial_automaton = create_node_automaton(path_name);

@@ -5,9 +5,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-int control = 0, Line = 0, Colunm = 0;
-bool token_insert = false;
-
 struct list_tokens *create_list_token()
 {
     struct list_tokens *new = (struct list_tokens *)malloc(sizeof(struct list_tokens));
@@ -70,11 +67,12 @@ bool is_delimiter(char c)
 }
 
 void control_read_file_in_c_and_make_token_fill_symbol_table_and_token_list(struct all_automaton *all, struct list_tokens *ltk, struct symbol_table_list *stb, char *path)
-{ 
+{
     int line = 0, colunm = 0, size = 1;
-    char *character_sequence = NULL;
+    char *character_sequence = NULL, *duplo = NULL;
     char buffer = '\0';
-
+    duplo = (char *)calloc(3, sizeof(char));
+    gmemset(&duplo, 3, '\0');
     character_sequence = (char *)calloc(size, sizeof(char));
     gmemset(&character_sequence, gstrlen(character_sequence), '\0');
     gstrsetvalue(&character_sequence, 0, '\0');
@@ -92,21 +90,58 @@ void control_read_file_in_c_and_make_token_fill_symbol_table_and_token_list(stru
         colunm++;
         if (is_delimiter(buffer) == true)
         {
-            if (buffer == '\n')
+            if ((buffer == '\n') || (buffer == ' '))
             {
-                Colunm = 0;
-                Line++;
+                if (buffer == '\n')
+                {
+                    colunm = 0;
+                    line++;
+                }
+            }
+            else
+            {
+                duplo[0] = buffer;
+                fread(&buffer, sizeof(char), 1, analyser_file);
+                if (is_delimiter(buffer) == true)
+                {
+                    // != || >= >> <<
+                    duplo[1] = buffer;
+                    if ((buffer == '>') || (buffer == '|') || (buffer == '=') || (buffer == '<') || (buffer == '&') || (buffer == '+'))
+                    {
+                        if (verify_file_with_automaton(all, duplo, stb, ltk, line, colunm) == false)
+                        {
+                            gcolored_print("\n[ERROR] ->", RED);
+                            printf("linha %d coluna %d [ %s ]",line,colunm, character_sequence);
+                        }
+                        
+                        continue;
+                    }
+                    else
+                    {
+                        fseek(analyser_file, -1, SEEK_CUR);
+                        buffer = duplo[0];
+                    }
+                }
+                else
+                {
+                    fseek(analyser_file, -1, SEEK_CUR);
+                    buffer = duplo[0];
+                }
             }
 
             if (is_empty(character_sequence) == false)
             {
                 character_sequence[size - 1] = '\0';
-                verify_file_with_automaton(all, character_sequence, stb, ltk);
+                if (verify_file_with_automaton(all, character_sequence, stb, ltk, line, colunm) == false)
+                        {
+                            gcolored_print("\n[ERROR] ->", RED);
+                            printf("linha %d coluna %d [ %s ]\n",line,colunm, character_sequence);
+                        }
                 free(character_sequence);
                 size = 1;
                 character_sequence = (char *)calloc(size, sizeof(char));
                 gmemset(&character_sequence, gstrlen(character_sequence), '\0');
-                size ++;
+                size++;
             }
             if ((buffer != '\0') && (buffer != '\n') && (buffer != ' '))
             {
@@ -121,7 +156,7 @@ void control_read_file_in_c_and_make_token_fill_symbol_table_and_token_list(stru
     }
 }
 
-bool verify_file_with_automaton(struct all_automaton *all, char *character_sequence, struct symbol_table_list *stb, struct list_tokens *ltk)
+bool verify_file_with_automaton(struct all_automaton *all, char *character_sequence, struct symbol_table_list *stb, struct list_tokens *ltk, int line, int colunm)
 {
     struct automaton_node *aux = all->initial_automaton;
     for (int i = 0; i < all->files_reads; i++)
@@ -133,8 +168,8 @@ bool verify_file_with_automaton(struct all_automaton *all, char *character_seque
             {
                 insert_indentifier_in_symbol_table(stb, (stb->number_elements + 1), character_sequence);
             }
-            insert_token_in_token_list(ltk, Line, Colunm, character_sequence, aux->name);
-            printf("\n[INSERIDO] [ %s ] -> [ %s ]\n", character_sequence, aux->name);
+            insert_token_in_token_list(ltk, line, colunm, character_sequence, aux->name);
+            printf("%s  ", aux->name);
             gmemset(&character_sequence, gstrlen(character_sequence), '\0');
             return true;
         }
@@ -146,6 +181,20 @@ bool verify_file_with_automaton(struct all_automaton *all, char *character_seque
 struct transition *take_init_state(struct automaton *automaton)
 {
     struct transition *aux = automaton->initial_transition;
+    while (aux != NULL)
+    {
+        if (aux->host->initial_state == true)
+        {
+            return aux;
+        }
+        aux = aux->next;
+    }
+    return NULL;
+}
+
+struct transition *take_two_init_state(struct transition *aux)
+{
+    aux = aux->next;
     while (aux != NULL)
     {
         if (aux->host->initial_state == true)
@@ -206,8 +255,6 @@ bool checkline(struct automaton *automaton, char *buffer, int size)
             }
             aux = aux->next;
         }
-        
-        
     }
     else
     {
@@ -230,10 +277,12 @@ bool checkline(struct automaton *automaton, char *buffer, int size)
             }
             else
             {
+
                 if (aux->next == NULL)
                 {
                     return false;
                 }
+
                 aux = aux->next;
             }
         }
@@ -284,10 +333,20 @@ void insert_delimiter_token_list(struct all_automaton *all, int line, int column
         if (check == true)
         {
             insert_token_in_list_of_token(ltk, column + 1, line + 1, &delimiter, current_auto->name);
-            printf("\n[INSERIDO] [ %c ] -> [ %s ]\n", delimiter, current_auto->name);
+            printf("%s  ", current_auto->name);
             return;
         }
         current_auto = current_auto->next;
     }
     return;
 }
+
+// void print_stb(struct symbol_table_list *st, struct list_tokens *tk)
+// {
+//     struct symbol_table *aux = st->start_symbol_table;
+//     for (int i = 0; i < aux ; i++)
+//     {
+//         /* code */
+//     }
+
+// }
