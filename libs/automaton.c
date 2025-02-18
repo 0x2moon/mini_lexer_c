@@ -140,7 +140,7 @@ struct automaton *the_configuration_file_into_the_automaton(struct automaton *au
   input_file = fopen(config_file, "r");
   if (input_file == NULL)
   {
-    printf("[ERROR] config file error");
+    printf("[ERROR] automaton config file error (%s)\n",config_file);
     exit(1);
   }
 

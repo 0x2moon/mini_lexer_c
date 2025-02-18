@@ -47,7 +47,7 @@ FILE *open_file_c_for_read_automaton(char *file_c)
     new = fopen(file_c, "r");
     if (new == NULL)
     {
-        printf("[ERROR] Open c file");
+        printf("[ERROR] Open c file (%s)\n", file_c);
         exit(1);
     }
     return new;
@@ -104,16 +104,15 @@ void control_read_file_in_c_and_make_token_fill_symbol_table_and_token_list(stru
                 fread(&buffer, sizeof(char), 1, analyser_file);
                 if (is_delimiter(buffer) == true)
                 {
-                    // != || >= >> <<
                     duplo[1] = buffer;
                     if ((buffer == '>') || (buffer == '|') || (buffer == '=') || (buffer == '<') || (buffer == '&') || (buffer == '+'))
                     {
                         if (verify_file_with_automaton(all, duplo, stb, ltk, line, colunm) == false)
                         {
                             gcolored_print("\n[ERROR] ->", RED);
-                            printf("linha %d coluna %d [ %s ]",line,colunm, character_sequence);
+                            printf("linha %d coluna %d [ %s ]", line, colunm, character_sequence);
                         }
-                        
+
                         continue;
                     }
                     else
@@ -133,10 +132,10 @@ void control_read_file_in_c_and_make_token_fill_symbol_table_and_token_list(stru
             {
                 character_sequence[size - 1] = '\0';
                 if (verify_file_with_automaton(all, character_sequence, stb, ltk, line, colunm) == false)
-                        {
-                            gcolored_print("\n[ERROR] ->", RED);
-                            printf("linha %d coluna %d [ %s ]\n",line,colunm, character_sequence);
-                        }
+                {
+                    gcolored_print("\n[ERROR] ->", RED);
+                    printf("linha %d coluna %d [ %s ]\n", line, colunm, character_sequence);
+                }
                 free(character_sequence);
                 size = 1;
                 character_sequence = (char *)calloc(size, sizeof(char));
@@ -178,14 +177,65 @@ bool verify_file_with_automaton(struct all_automaton *all, char *character_seque
     return false;
 }
 
-struct transition *take_init_state(struct automaton *automaton)
+int size_initial_state_transition(struct automaton *aut, struct state *state)
+{
+    if (aut == NULL || state == NULL)
+        return 0;
+
+    int size = 0;
+    struct state *initial_state = state;
+    struct transition *aux = aut->initial_transition;
+
+    while (aux != NULL)
+    {
+        if (aux->host != NULL && gstrcomp(aux->host->name, initial_state->name))
+        {
+            size++;
+        }
+        aux = aux->next;
+    }
+
+    return size;
+}
+
+void transition_next(struct automaton *automaton, struct state *state, struct transition *list[], int size)
+{
+
+    if (automaton == NULL || list == NULL || size <= 0)
+        return;
+
+    int i = 0;
+    for (; i < size; i++)
+    {
+        list[i] = NULL;
+    }
+
+    struct state *initial_state = state;
+    if (initial_state == NULL)
+        return;
+
+    i = 0;
+    struct transition *tr = automaton->initial_transition;
+
+    while (tr != NULL && i < size)
+    {
+        if (tr->host != NULL && gstrcomp(tr->host->name, initial_state->name))
+        {
+            list[i] = tr;
+            i++;
+        }
+        tr = tr->next;
+    }
+}
+
+struct state *take_init_state(struct automaton *automaton)
 {
     struct transition *aux = automaton->initial_transition;
     while (aux != NULL)
     {
         if (aux->host->initial_state == true)
         {
-            return aux;
+            return aux->host;
         }
         aux = aux->next;
     }
@@ -237,57 +287,97 @@ struct transition *search_connect_state_in_automaton(struct transition *transiti
     return transition;
 }
 
-bool checkline(struct automaton *automaton, char *buffer, int size)
+bool checkline(struct automaton *automaton, char *buffer, int buf_size)
 {
-    struct transition *transition = take_init_state(automaton);
-    struct value *aux = transition->start_value;
-    bool check = false;
+
+    if (automaton == NULL || buffer == NULL || buf_size <= 0)
+        return false;
+
+    int control = size_initial_state_transition(automaton, take_init_state(automaton));
+    if (control <= 0)
+        return false;
+
+    struct transition *list[10] = {NULL};
+    transition_next(automaton, automaton->initial_state, list, control);
+
+    int list_control = 0;
+    struct transition *current_transition = list[list_control];
+    if (current_transition == NULL)
+        return false;
+
+    struct value *current_value = current_transition->start_value;
+    bool match_found = false;
     int i = 0;
 
-    if (size == 1)
+    if (buf_size == 1)
     {
-        while (aux != NULL)
+        while (current_value != NULL)
         {
-            check = gcharcomp(*buffer, aux->value_transition);
-            if (check == true)
-            {
+            match_found = gcharcomp(*buffer, current_value->value_transition);
+            if (match_found)
                 break;
-            }
-            aux = aux->next;
+            current_value = current_value->next;
         }
     }
     else
     {
         while (buffer[i] != '\0')
         {
-            check = gcharcomp(buffer[i], aux->value_transition);
-            if (check == true)
+            if (current_value == NULL)
             {
-                transition = search_connect_state_in_automaton(automaton->initial_transition, transition->connect->name);
-                if (i == size - 1)
+                if (list_control < control -1)
+                {
+                    list_control++;
+                    current_transition = list[list_control];
+                    current_value = current_transition->start_value;
+                    continue;
+                }
+                return false;
+            }
+            match_found = gcharcomp(buffer[i], current_value->value_transition);
+            if (match_found)
+            {
+                current_transition = search_connect_state_in_automaton(automaton->initial_transition, current_transition->connect->name);
+                if (i == buf_size - 1)
                 {
                     break;
                 }
                 else
                 {
-                    aux = transition->start_value;
+                    control = size_initial_state_transition(automaton, current_transition->host);
+                    for (int j = 0; j < 10; j++)
+                    {
+                        list[j] = NULL;
+                    }
+                    transition_next(automaton, current_transition->host, list, control);
+                    list_control = 0;
+                    current_transition = list[list_control];
+                    if (current_transition == NULL)
+                        break;
+
+                    current_value = current_transition->start_value;
                     i++;
                     continue;
                 }
             }
             else
             {
-
-                if (aux->next == NULL)
+                if (current_value->next == NULL)
                 {
+                    if (list_control < control -1)
+                    {
+                        list_control++;
+                        current_transition = list[list_control];
+                        current_value = current_transition->start_value;
+                        continue;
+                    }
                     return false;
                 }
-
-                aux = aux->next;
+                current_value = current_value->next;
             }
         }
     }
-    if ((check == true) && (transition->host->final_state))
+    if ((match_found == true) && (current_transition->host->final_state == true))
     {
         return true;
     }

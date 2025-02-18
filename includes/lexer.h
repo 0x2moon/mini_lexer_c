@@ -25,5 +25,6 @@ void control_read_file_in_c_and_make_token_fill_symbol_table_and_token_list(stru
 void insert_token_in_token_list(struct list_tokens *ltk, int line, int columns, char *kw, char *lex);
 void insert_indentifier_in_symbol_table(struct symbol_table_list *stb, int id, char *lexema);
 bool verify_file_with_automaton(struct all_automaton *all, char *character_sequence, struct symbol_table_list *stb, struct list_tokens *ltk, int line, int colunm);
-bool checkline(struct automaton *automaton, char *buffer, int size);
+bool checkline(struct automaton *automaton, char *buffer, int buf_size);
+struct state *take_init_state(struct automaton *automaton);
 #endif

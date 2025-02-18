@@ -127,7 +127,7 @@ void ensure_zeroA_end_file(char *filename)
   FILE *file = fopen(filename, "r");
   if ((file == NULL))
   {
-    printf("\n\n\033[41;1;37m[ERROR]\033[m\tOpening file for verification\n");
+    printf("\n\n\033[41;1;37m[ERROR]\033[m\tOpening file for 'end file' verification (%s)\n",filename);
     exit(EXIT_FAILURE);
   }
   char buffer;
@@ -143,7 +143,7 @@ void ensure_zeroA_end_file(char *filename)
     file = fopen(filename, "a");
     if ((file == NULL))
     {
-      printf("\n\n\033[41;1;37m[ERROR]\033[m\tOpening file for verification\n");
+      printf("\n\n\033[41;1;37m[ERROR]\033[m\tOpening file for 'end file' verification (%s)\n",filename);
       exit(EXIT_FAILURE);
     }
     fprintf(file, "\n");

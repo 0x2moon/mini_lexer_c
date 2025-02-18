@@ -1,9 +1,9 @@
+->q0,u,q1
 q5,n,q6
 q7,d,q8
 q4,g,q5
 q1,n,q2
 q6,e,q7
-->q0,u,q1
 q3,i,q4
 q2,s,q3
 *q8,-,-
